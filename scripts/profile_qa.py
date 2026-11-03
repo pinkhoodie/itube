@@ -1,0 +1,75 @@
+"""Browser acceptance for local profile settings. Pass origin/password via environment."""
+import json,os
+from pathlib import Path
+from playwright.sync_api import sync_playwright
+BASE=os.environ.get('ITUBE_QA_ORIGIN','http://127.0.0.1:4190').rstrip('/')
+PASSWORD=os.environ['ITUBE_QA_PASSWORD']
+ROOT=Path(__file__).resolve().parents[1]
+checks=[]
+def ok(name,value):
+ assert value,name
+ checks.append(name)
+def ready(page):
+ page.locator('#feed-sort').wait_for()
+ page.wait_for_function("!document.querySelector('#main [role=status]')")
+def settings(page):
+ if not page.locator('#preferences').evaluate('(el)=>el.open'):
+  opener=page.locator('#preferences-open')
+  if not opener.is_visible():opener=page.locator('.topbar [data-preferences]')
+  opener.click()
+ page.locator('#profile-name').wait_for()
+with sync_playwright() as p:
+ browser=p.chromium.launch()
+ c=browser.new_context(viewport={'width':1440,'height':1100},reduced_motion='reduce')
+ r=c.request.post(BASE+'/login',form={'password':PASSWORD},max_redirects=0)
+ ok('existing server authentication works',r.status==303)
+ c.add_init_script("""if(!localStorage.getItem('profile-qa-seeded')){localStorage.setItem('hackertube.preferences.v1',JSON.stringify({version:1,saved:['JxNCuXkSWyQ'],liked:[],disliked:[],history:[]}));localStorage.setItem('profile-qa-seeded','yes')}""")
+ page=c.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
+ page.goto(BASE+'/');ready(page)
+ ok('new viewer starts with generic identity','For you' in page.title())
+ settings(page)
+ ok('profile settings include name, handle, interests',page.locator('#profile-name').count()==1 and page.locator('#profile-handle').count()==1 and page.locator('#profile-topics').count()==1)
+ page.locator('#profile-name').fill('Alex Example')
+ page.locator('#profile-handle').fill('@alex_demo')
+ page.locator('#profile-topics').fill('permissions, design')
+ page.locator('#profile-save').click()
+ ok('saved identity updates navigation','For Alex Example' in page.locator('[data-view="for-you"]').inner_text())
+ page.keyboard.press('Escape');page.reload();ready(page);settings(page)
+ ok('profile survives reload',page.locator('#profile-name').input_value()=='Alex Example' and page.locator('#profile-handle').input_value().lstrip('@').lower()=='alex_demo' and 'permissions' in page.locator('#profile-topics').input_value())
+ page.locator('#profile-name').fill('Unsaved Draft');page.keyboard.press('Escape');settings(page)
+ ok('closing settings discards unsaved draft',page.locator('#profile-name').input_value()=='Alex Example')
+ page.locator('#profile-handle').fill('https://x.com/invalid')
+ page.locator('#profile-save').click()
+ ok('invalid handle rejected',bool(page.locator('#profile-error').inner_text().strip()))
+ page.locator('#profile-handle').fill('@alex_demo');page.locator('#profile-save').click();page.keyboard.press('Escape')
+ page.goto(BASE+'/?view=nir&sort=newest&window=90');ready(page)
+ ok('legacy feed URLs migrate without losing freshness',page.locator('#feed-sort').input_value()=='newest' and page.locator('#feed-window').input_value()=='90' and 'view=nir' not in page.url)
+ ok('global newest ordering survives profile matching',page.locator('#mixed-grid').evaluate("el=>{const stamps=[...el.children].map(e=>Date.parse(e.querySelector('time')?.dateTime)).filter(Number.isFinite);return stamps.every((v,i)=>!i||stamps[i-1]>=v)}"))
+ page.goto(BASE+'/?sort=recent&window=all#/watch/JxNCuXkSWyQ');page.locator('iframe.player').wait_for()
+ page.evaluate('window.qaPlayer=document.querySelector("iframe.player")')
+ settings(page);page.locator('#profile-name').fill('Jamie Example');page.locator('#profile-save').click()
+ ok('profile changes do not remount active player',page.evaluate('window.qaPlayer===document.querySelector("iframe.player")'))
+ page.keyboard.press('Escape');settings(page)
+ page.locator('#preferences [data-discovery-data]').click()
+ with page.expect_download() as d:page.locator('#discovery-export').click()
+ exported=json.loads(d.value.path().read_text())
+ ok('explicit feedback export includes profile',exported.get('profile',{}).get('name')=='Jamie Example' and 'alex_demo' in json.dumps(exported.get('profile',{})).lower())
+ ok('profile operations preserve existing saves','JxNCuXkSWyQ' in exported['youtube']['saved'])
+ page.keyboard.press('Escape');page.keyboard.press('Escape');settings(page)
+ page.once('dialog',lambda d:d.dismiss());page.locator('#profile-reset').click()
+ ok('reset cancellation preserves profile',page.locator('#profile-name').input_value()=='Jamie Example')
+ page.once('dialog',lambda d:d.accept());page.locator('#profile-reset').click()
+ if not page.locator('#preferences').evaluate('(el)=>el.open'):settings(page)
+ ok('confirmed reset clears profile only',page.locator('#profile-name').input_value()=='' and 'JxNCuXkSWyQ' in json.loads(page.evaluate("localStorage.getItem('hackertube.preferences.v1')"))['saved'])
+ page.keyboard.press('Escape');page.goto(BASE+'/');ready(page)
+ ok('profile reset restores generic feed title','For you' in page.title())
+ for width in [390,320]:
+  page.set_viewport_size({'width':width,'height':844});settings(page)
+  ok(str(width)+'px settings have no overflow',page.evaluate('document.documentElement.scrollWidth<=innerWidth') and page.locator('#preferences').evaluate('e=>e.scrollWidth<=e.clientWidth'))
+  ok(str(width)+'px controls are usable',page.locator('#profile-name').is_visible() and page.locator('#profile-save').is_visible())
+  if width==390:page.screenshot(path=str(ROOT/'profile-mobile.png'))
+  page.keyboard.press('Escape')
+ page.set_viewport_size({'width':1440,'height':1100});settings(page);page.screenshot(path=str(ROOT/'profile-desktop.png'))
+ ok('no application errors',not errors)
+ browser.close()
+print(json.dumps({'origin':BASE,'checks':len(checks),'passed':checks},indent=2))

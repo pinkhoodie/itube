@@ -1,0 +1,20 @@
+[
+  {
+    "vid": "JxNCuXkSWyQ",
+    "url": "https://www.youtube.com/watch?v=JxNCuXkSWyQ",
+    "title": "Agent permissions: valid credentials are not enough",
+    "channel": "Sagar Batchu · published by AI Engineer",
+    "published": "2026-11-02T10:00:35Z",
+    "summary": "Public demo example: a talk about checking an agent’s intended action, not merely its credentials. Open the credited original for the speaker’s full account.",
+    "curation_why": "An example of how editorial context can accompany an original video without pretending it came from your account.",
+    "borrow": "Define a permission check for each tool action before giving an agent broader access.",
+    "source": "YouTube",
+    "provenance": "editorial",
+    "tags": [
+      "AI agents",
+      "permissions"
+    ],
+    "categories": [],
+    "score": 0
+  }
+]

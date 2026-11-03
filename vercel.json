@@ -1,0 +1,14 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "proxy": { "entrypoint": "proxy.js", "matcher": "/:path*" },
+  "buildCommand": "node scripts/build.mjs",
+  "outputDirectory": "dist",
+  "headers": [{
+    "source": "/(.*)",
+    "headers": [
+      { "key": "X-Content-Type-Options", "value": "nosniff" },
+      { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+    ]
+  }]
+}

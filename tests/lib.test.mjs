@@ -1,0 +1,13 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {filterVideos,recommendVideos,formatDuration,readState} from '../lib.mjs';
+const a={vid:'aaaaaaaaaaa',title:'Lambda calculus',channel:'Teacher',categories:[{id:'code',area:'software'}],duration_s:500,content_type:'talk',views:500,score:8,published:'2020-01-01'};
+const b={vid:'bbbbbbbbbbb',title:'Space',categories:[{id:'physics',area:'science'}],duration_s:4000,content_type:'lecture',views:200000,score:10,published:'2025-01-01'};
+const c={...a,vid:'ccccccccccc',title:'More lambda',duration_s:1500,score:7};
+const library=[a,b,c];
+test('format durations and malformed values',()=>{assert.equal(formatDuration(3661),'1:01:01');assert.equal(formatDuration(61),'1:01');assert.equal(formatDuration(-4),'—');});
+test('state tolerates malformed input and validates identifiers and mutual exclusion',()=>{assert.deepEqual(readState('{bad'),readState(null));assert.equal(readState({version:9,saved:[a.vid]}).saved.length,0);const s=readState({saved:[a.vid,a.vid,'../bad'],liked:[b.vid],disliked:[b.vid]});assert.deepEqual(s.saved,[a.vid]);assert.deepEqual(s.liked,[]);});
+test('search, categories, areas, duration, type and combined filters',()=>{assert.deepEqual(filterVideos(library,{q:'lambda teacher',area:'software',category:'code',duration:'short',type:'talk'}).map(v=>v.vid),[a.vid]);assert.deepEqual(filterVideos(library,{duration:'medium'}).map(v=>v.vid),[c.vid]);assert.deepEqual(filterVideos(library,{duration:'long'}).map(v=>v.vid),[b.vid]);assert.deepEqual(filterVideos(library,{q:'not found'}),[]);});
+test('longs, gems, saved, history and recent sort',()=>{assert.deepEqual(filterVideos(library,{view:'longs'}),[b]);assert.equal(filterVideos(library,{view:'gems'}).length,2);assert.deepEqual(filterVideos(library,{view:'saved'},{saved:[c.vid]}),[c]);assert.deepEqual(filterVideos(library,{view:'history'},{history:[a.vid,c.vid]}),[a,c]);assert.equal(filterVideos(library,{sort:'recent'})[0].vid,b.vid);});
+test('unknown view counts do not masquerade as hidden gems',()=>{assert.deepEqual(filterVideos([{...a,views:null}],{view:'gems'}),[]);});
+test('recommendations are deterministic, suppress dislikes, demote seen, and learn topic affinity',()=>{assert.equal(recommendVideos(library)[0].vid,b.vid);assert.ok(!recommendVideos(library,{disliked:[b.vid]}).includes(b));assert.notEqual(recommendVideos(library,{history:[b.vid]})[0].vid,b.vid);assert.equal(recommendVideos(library,{liked:[a.vid,c.vid]})[0].vid,a.vid);assert.deepEqual(library,[a,b,c]);});

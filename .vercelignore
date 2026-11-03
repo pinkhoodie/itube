@@ -1,0 +1,13 @@
+.env*
+.env.example
+.vercel
+node_modules
+dist
+tests
+research
+data-cache
+feedback-exports
+README.md
+SECURITY.md
+DATA-SOURCES.md
+PUBLICATION.md

@@ -1,0 +1,54 @@
+{
+  "edition": "public-demo",
+  "method": "A minimal intentionally public editorial demo, not a personal feed or live ingestion.",
+  "items": [
+    {
+      "id": "x-2116383901115711897",
+      "postId": "2116383901115711897",
+      "url": "https://x.com/pratikg/status/2116383901115711897",
+      "title": "A public computer-use demonstration",
+      "creator": "@pratikg",
+      "published": "2026-10-31T04:16:57Z",
+      "topics": [
+        "agents"
+      ],
+      "summary": "Public demo example: a credited computer-use clip. Watch the original post to judge its behavior and limitations.",
+      "why": "Demonstrates how an X source can participate in the same feed as a YouTube source.",
+      "borrow": "Choose a repeatable task and inspect the visible actions rather than judging only a polished final result.",
+      "links": [],
+      "media": "video",
+      "source": "X",
+      "thumbnail": "",
+      "verification": "Original public post identity and video attachment checked for the editorial demo."
+    }
+  ],
+  "interests": [
+    {
+      "id": "agents",
+      "label": "Useful agents",
+      "reason": "Optional topic for exploring the public demo."
+    },
+    {
+      "id": "interfaces",
+      "label": "Interfaces beyond chat",
+      "reason": "Optional topic for exploring the public demo."
+    },
+    {
+      "id": "private-ai",
+      "label": "Personal & local AI",
+      "reason": "Optional topic for exploring the public demo."
+    },
+    {
+      "id": "creative-tools",
+      "label": "Creative tools",
+      "reason": "Optional topic for exploring the public demo."
+    }
+  ],
+  "sources": [
+    {
+      "handle": "@pratikg",
+      "url": "https://x.com/pratikg",
+      "reason": "Credited original public demo source."
+    }
+  ]
+}
